@@ -7,6 +7,7 @@ const int numberInputLayer = 11;
 const int numberHiddenLayer = 1;
 const int numberOutputLayer = 11;
 const int numberEpochs = 2;
+const int numberIterations = 2;
 float learningRate = 0.1;
 const float anneal = 0.995;
 
@@ -24,6 +25,8 @@ float input[numberInputLayer];
 float output[numberOutputLayer];
 genann* ann;
 int epoch = 0;
+int iterations=0;
+bool offlineTraining=true;
 bool trainingDisabled = false;
 bool testingDisabled = false;
 bool useTransferLearning = false;
@@ -123,7 +126,13 @@ void callback(const char* topic, byte* payload, unsigned int length) {
 
 // Modo de entrenamiento inicial
 void trainingMode() {
-    initMQTT(nodeNumber);
+    if (!offlineTraining){
+        initMQTT(nodeNumber);
+    } else{
+        Serial.println("nodes Trainning offline");
+
+    }
+    
 
     
     if(!trainingDisabled || !testingDisabled){
@@ -138,7 +147,7 @@ void trainingMode() {
     initDataframe(numberInputLayer, numberOutputLayer);
     initMetrics(numberOutputLayer);
 
-    ann = genann_init(numberInputLayer, 2, numberHiddenLayer, numberOutputLayer);
+    ann = genann_init(numberInputLayer, 2, numberHiddenLayer, numberOutputLayer,"tanh");
     if (ann == nullptr) {
         Serial.println("Out of memory");
         while (1);
@@ -158,11 +167,19 @@ void trainingMode() {
     else genann_randomize(ann);
     // Serial.println("Starting training...");
 
-    Serial.println("Waiting other nodes for 1 minute...");
-    delay(1*60*1000);
+    if(!offlineTraining){
+        Serial.println("Traning online");
+        Serial.println("Waiting other nodes for 1 minute...");
+        delay(1*60*1000);
+    }
+    
     Serial.println("starting training:");
-       
-    awaitWeights(callback, nodeNumber, !trainingDisabled);
+
+
+    if(!offlineTraining){
+        awaitWeights(callback, nodeNumber, !trainingDisabled);
+    }   
+    
 }
 
 // Ciclo de entrenamiento
@@ -182,23 +199,43 @@ void trainingMode() {
 // }
 
 void _loop() {
-    if(!trainingDisabled && !waitingWeights && epoch < numberEpochs){
-        closeConnection(); //disable MQTT before training to save memory
-        execute(epoch);
-        epoch++;
-        initMQTT(nodeNumber); //enable MQTT
-        awaitWeights(callback, nodeNumber, !trainingDisabled);
-        if(epoch >= numberEpochs || useFedAvg){
-            if(epoch >= numberEpochs){
+    if (!offlineTraining){
+        if( !trainingDisabled && !waitingWeights && iterations < numberIterations){
+            closeConnection(); //disable MQTT before training to save memory
+            for(int i=0; i<numberEpochs; i++ ){
+                execute(epoch);
+                epoch++;
+            }
+            Serial.print("Iteration Number: ");
+            Serial.println(iterations);
+            iterations++;
+            epoch=0;
+            initMQTT(nodeNumber); //enable MQTT
+            awaitWeights(callback, nodeNumber, !trainingDisabled);
+            if(iterations >= numberIterations || useFedAvg){
+                if(iterations >= numberIterations){
+                    Serial.println("Training ended.");
+                    trainingDisabled = true;
+                    //resultFile.close();
+                    fclose(trainSetFile);
+                    //testSetFile.close();
+                }else Serial.println("Waiting weights...");
+                waitingWeights = true;
+                sendWeights(nodeNumber, ann);
+            }
+        }
+        mqttLoop();
+    }else {
+        if( !trainingDisabled && !waitingWeights && epoch < numberEpochs) {
+            execute(epoch);
+            epoch++;
+            if(epoch >= numberEpochs ){
                 Serial.println("Training ended.");
                 trainingDisabled = true;
-                //resultFile.close();
                 fclose(trainSetFile);
-                //testSetFile.close();
-            }else Serial.println("Waiting weights...");
-            waitingWeights = true;
-            sendWeights(nodeNumber, ann);
+            }
+
         }
     }
-    mqttLoop();
+
 }

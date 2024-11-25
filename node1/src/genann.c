@@ -61,6 +61,9 @@ float genann_act_output_indirect(const struct genann *ann, float a) {
 
 const float sigmoid_dom_min = -15.0;
 const float sigmoid_dom_max = 15.0;
+const float tanh_dom_min = -10.0;  // Valores extremos para evitar saturación.
+const float tanh_dom_max = 10.0;
+
 float interval;
 float lookup[LOOKUP_SIZE];
 
@@ -82,6 +85,15 @@ float genann_act_sigmoid(const genann *ann unused, float a) {
     return 1.0 / (1 + exp(-a));
 }
 
+float genann_act_tanh(const genann *ann unused, float a) {
+    if (a < tanh_dom_min) return -1.0;  // tanh(-∞) = -1
+    if (a > tanh_dom_max) return 1.0;   // tanh(∞) = 1
+    return tanh(a);
+}
+
+
+
+
 void genann_init_sigmoid_lookup(const genann *ann) {
         const float f = (sigmoid_dom_max - sigmoid_dom_min) / LOOKUP_SIZE;
         int i;
@@ -91,6 +103,17 @@ void genann_init_sigmoid_lookup(const genann *ann) {
             lookup[i] = genann_act_sigmoid(ann, sigmoid_dom_min + f * i);
         }
 }
+
+void genann_init_tanh_lookup(const genann *ann) {
+    const float f = (tanh_dom_max - tanh_dom_min) / LOOKUP_SIZE;
+    int i;
+
+    interval = LOOKUP_SIZE / (tanh_dom_max - tanh_dom_min);
+    for (i = 0; i < LOOKUP_SIZE; ++i) {
+        lookup[i] = genann_act_tanh(ann, tanh_dom_min + f * i);
+    }
+}
+
 
 float genann_act_sigmoid_cached(const genann *ann unused, float a) {
     assert(!isnan(a));
@@ -106,6 +129,20 @@ float genann_act_sigmoid_cached(const genann *ann unused, float a) {
     return lookup[j];
 }
 
+float genann_act_tanh_cached(const genann *ann unused, float a) {
+    assert(!isnan(a));
+
+    if (a < tanh_dom_min) return lookup[0];
+    if (a >= tanh_dom_max) return lookup[LOOKUP_SIZE - 1];
+
+    size_t j = (size_t)((a - tanh_dom_min) * interval + 0.5);
+
+    /* Por cuestiones de precisión de punto flotante... */
+    if (unlikely(j >= LOOKUP_SIZE)) return lookup[LOOKUP_SIZE - 1];
+
+    return lookup[j];
+}
+
 float genann_act_linear(const struct genann *ann unused, float a) {
     return a;
 }
@@ -114,12 +151,52 @@ float genann_act_threshold(const struct genann *ann unused, float a) {
     return a > 0;
 }
 
-genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs) {
+// genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs) {
+//     if (hidden_layers < 0) return 0;
+//     if (inputs < 1) return 0;
+//     if (outputs < 1) return 0;
+//     if (hidden_layers > 0 && hidden < 1) return 0;
+
+
+//     const int hidden_weights = hidden_layers ? (inputs+1) * hidden + (hidden_layers-1) * (hidden+1) * hidden : 0;
+//     const int output_weights = (hidden_layers ? (hidden+1) : (inputs+1)) * outputs;
+//     const int total_weights = (hidden_weights + output_weights);
+
+//     const int total_neurons = (inputs + hidden * hidden_layers + outputs);
+
+//     /* Allocate extra size for weights, outputs, and deltas. */
+//     const int size = sizeof(genann) + sizeof(float) * (total_weights + total_neurons + (total_neurons - inputs));
+//     genann *ret = malloc(size);
+//     if (!ret) return 0;
+
+//     ret->inputs = inputs;
+//     ret->hidden_layers = hidden_layers;
+//     ret->hidden = hidden;
+//     ret->outputs = outputs;
+
+//     ret->total_weights = total_weights;
+//     ret->total_neurons = total_neurons;
+
+//     /* Set pointers. */
+//     ret->weight = (float*)((char*)ret + sizeof(genann));
+//     ret->output = ret->weight + ret->total_weights;
+//     ret->delta = ret->output + ret->total_neurons;
+
+//     genann_randomize(ret);
+
+//     ret->activation_hidden = genann_act_sigmoid_cached;
+//     ret->activation_output = genann_act_sigmoid_cached;
+
+//     genann_init_sigmoid_lookup(ret);
+
+//     return ret;
+// }
+
+genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs, const char *activation) {
     if (hidden_layers < 0) return 0;
     if (inputs < 1) return 0;
     if (outputs < 1) return 0;
     if (hidden_layers > 0 && hidden < 1) return 0;
-
 
     const int hidden_weights = hidden_layers ? (inputs+1) * hidden + (hidden_layers-1) * (hidden+1) * hidden : 0;
     const int output_weights = (hidden_layers ? (hidden+1) : (inputs+1)) * outputs;
@@ -147,13 +224,19 @@ genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs) {
 
     genann_randomize(ret);
 
-    ret->activation_hidden = genann_act_sigmoid_cached;
-    ret->activation_output = genann_act_sigmoid_cached;
-
-    genann_init_sigmoid_lookup(ret);
+    if (strcmp(activation, "tanh") == 0) {
+        ret->activation_hidden = genann_act_tanh_cached;
+        ret->activation_output = genann_act_tanh_cached;
+        genann_init_tanh_lookup(ret);
+    } else {
+        ret->activation_hidden = genann_act_sigmoid_cached;
+        ret->activation_output = genann_act_sigmoid_cached;
+        genann_init_sigmoid_lookup(ret);
+    }
 
     return ret;
 }
+
 
 
 genann *genann_read(FILE *in) {
@@ -167,7 +250,7 @@ genann *genann_read(FILE *in) {
         return NULL;
     }
 
-    genann *ann = genann_init(inputs, hidden_layers, hidden, outputs);
+    genann *ann = genann_init(inputs, hidden_layers, hidden, outputs, "tanh");
 
     int i;
     for (i = 0; i < ann->total_weights; ++i) {

@@ -71,7 +71,8 @@ typedef struct genann {
 } genann;
 
 /* Creates and returns a new ann. */
-genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs);
+// genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs);
+genann *genann_init(int inputs, int hidden_layers, int hidden, int outputs, const char *activation);
 
 /* Creates ANN from file saved with genann_write. */
 //genann *genann_read(const char* filename);
@@ -93,6 +94,11 @@ void genann_train(genann const *ann, float const *inputs, float const *desired_o
 
 /* Saves the ann. */
 //void genann_write(genann const *ann, const char* filename);
+float genann_act_tanh(const genann *ann, float a);
+void genann_init_tanh_lookup(const genann *ann);
+float genann_act_tanh_cached(const genann *ann, float a);
+float genann_act_tanh_cached(const genann *ann, float a);
+
 
 void genann_init_sigmoid_lookup(const genann *ann);
 float genann_act_sigmoid(const genann *ann, float a);
