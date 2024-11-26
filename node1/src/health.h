@@ -14,19 +14,26 @@ const float anneal = 0.995;
 // Rutas de archivo
 String pathTrain = "/sdcard/train.csv";
 String pathResult = "/sdcard/result.csv";
+String pathAnomalies = "/sdcard/anomaly.csv";
+String pathBest = "/sdcard/best.csv";
 String pathTest = "/sdcard/test.csv";
 String pathSaveWeights = "/sdcard/weights.txt";
+
 
 // Archivos y variables
 FILE* trainSetFile;
 FILE* resultFile;
 FILE* testSetFile;
+FILE* testAnomaly;
+FILE* best;
+
 float input[numberInputLayer];
 float output[numberOutputLayer];
+float bestValues[numberInputLayer];
 genann* ann;
 int epoch = 0;
 int iterations=0;
-bool offlineTraining=true;
+bool offlineTraining=false;
 bool trainingDisabled = false;
 bool testingDisabled = false;
 bool useTransferLearning = false;
@@ -35,6 +42,8 @@ bool useFedAvg = true;
 const int nodeNumber = 1;
 int weightIndex = 0;
 bool waitingWeights = false;
+bool iterationFinished=false;
+bool processFinished=false;
 
 // Inicialización de archivos
 bool initFiles() {
@@ -43,6 +52,7 @@ bool initFiles() {
         Serial.printf("Could not open file: %s\n", pathTrain.c_str());
         return false;
     }
+    Serial.println("1");
 
     resultFile = fopen(pathResult.c_str(), "w");
     if (!resultFile) {
@@ -50,6 +60,7 @@ bool initFiles() {
         fclose(trainSetFile);
         return false;
     }
+    Serial.println("2");
 
     testSetFile = fopen(pathTest.c_str(), "r");
     if (!testSetFile) {
@@ -58,6 +69,63 @@ bool initFiles() {
         fclose(resultFile);
         return false;
     }
+    Serial.println("3");
+
+    testAnomaly = fopen(pathAnomalies.c_str(), "a");
+    if (!testAnomaly) {
+        Serial.println("Could not create test anomaly file.");
+        fclose(trainSetFile);
+        fclose(resultFile);
+        fclose(testSetFile);
+        return false;
+    }
+    Serial.println("4");
+
+    best = fopen(pathBest.c_str(), "r");
+    if (!best) {
+        printf("Could not open test anomaly best threshold file.\n");
+        fclose(trainSetFile);
+        fclose(resultFile);
+        fclose(testSetFile);
+        fclose(testAnomaly);
+        return false;
+    } else {
+        char buffer[1024];
+        if (fgets(buffer, sizeof(buffer), best) == NULL) {
+            printf("Error: Could not read from the file.\n");
+            fclose(best);
+            fclose(trainSetFile);
+            fclose(resultFile);
+            fclose(testSetFile);
+            fclose(testAnomaly);
+            return false;
+        }
+
+        int count = 0;
+        char *token = strtok(buffer, ",");
+        while (token != NULL && count < numberInputLayer) {
+            bestValues[count] = strtof(token, NULL);  // Convertir el valor a float y almacenarlo
+            // printf("Value %d: %f\n", count, bestValues[count]); // Imprimir el valor leído
+            count++;
+            token = strtok(NULL, ",");
+        }
+
+        if (count != numberInputLayer) {
+            printf("Error: The number of values in the file does not match 'numberInputLayer'.\n");
+            fclose(best);
+            fclose(trainSetFile);
+            fclose(resultFile);
+            fclose(testSetFile);
+            fclose(testAnomaly);
+            return false;
+        }
+
+        fclose(best);  // Cerrar el archivo después de procesarlo
+    }
+
+
+    Serial.println("5");
+
 
     return true;
 }
@@ -169,8 +237,8 @@ void trainingMode() {
 
     if(!offlineTraining){
         Serial.println("Traning online");
-        Serial.println("Waiting other nodes for 1 minute...");
-        delay(1*60*1000);
+        Serial.println("Waiting other nodes for 30 seconds ");
+        delay(1*30*1000);
     }
     
     Serial.println("starting training:");
@@ -218,11 +286,27 @@ void _loop() {
                     trainingDisabled = true;
                     //resultFile.close();
                     fclose(trainSetFile);
+                    iterationFinished=true;
+
+
                     //testSetFile.close();
                 }else Serial.println("Waiting weights...");
                 waitingWeights = true;
                 sendWeights(nodeNumber, ann);
             }
+        }
+        if (!testingDisabled && !waitingWeights && iterationFinished  && !processFinished ) {
+            Serial.println("Estimating Anomalies...");
+            fseek(testSetFile, 0, SEEK_SET);
+            while (readData(testSetFile, input, output)){
+                predictAnomaly(testAnomaly, ann, input, output, bestValues);
+
+            }
+            fclose(testSetFile);
+            fclose(testAnomaly);
+
+            Serial.println("Estimating Anomalies finished");
+            processFinished=true;
         }
         mqttLoop();
     }else {
@@ -231,8 +315,23 @@ void _loop() {
             epoch++;
             if(epoch >= numberEpochs ){
                 Serial.println("Training ended.");
+                
                 trainingDisabled = true;
+                if (!testingDisabled) {
+                    Serial.println("Estimating Anomalies...");
+                    fseek(testSetFile, 0, SEEK_SET);
+                    while (readData(testSetFile, input, output)){
+                        predictAnomaly(testAnomaly, ann, input, output, bestValues);
+
+                    }
+                    fclose(testSetFile);
+                    fclose(testAnomaly);
+                    Serial.println("Estimating Anomalies finished");
+                }
+
                 fclose(trainSetFile);
+                fclose(trainSetFile);
+
             }
 
         }

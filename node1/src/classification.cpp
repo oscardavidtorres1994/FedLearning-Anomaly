@@ -4,6 +4,7 @@ int totals = 0;
 unsigned short confusionMatrix[5][5];
 int __outputLayers;
 float mse[columns];
+float mseTest[columns];
 
 unsigned long testTime;
 
@@ -40,6 +41,34 @@ void predict(genann const* ann, float* input, float* output) {
 
    
 }
+
+void predictAnomaly(FILE* file, genann const* ann, float* input, float* output, float* bestValues) {
+    const float* run = genann_run(ann, input);
+    bool allValid = true;  // Variable para verificar si todos los valores son válidos
+    float mseTest[columns];  // Arreglo para almacenar los errores calculados
+
+    // Calcula el error y aplica la lógica de comparación con bestValues
+    for (int i = 0; i < columns; i++) {
+        float error = powf(output[i] - run[i], 2); // Calcula el error cuadrático
+        mseTest[i] = error;  // Guarda el error en el arreglo mseTest
+
+        // Comparar el error con el valor correspondiente en bestValues
+        if (error > bestValues[i]) {
+            fprintf(file, "%f,false,", error);  // Guarda el error y false en el archivo
+            allValid = false;  // Si cualquier valor es mayor, todo es falso
+        } else {
+            fprintf(file, "%f,true,", error);  // Guarda el error y true en el archivo
+        }
+    }
+
+    // Agrega la columna final con el estado general basado en `allValid`
+    if (allValid) {
+        fprintf(file, "true\n");
+    } else {
+        fprintf(file, "false\n");
+    }
+}
+
 
 void resetMetrics() {
     mse[columns] = {0};

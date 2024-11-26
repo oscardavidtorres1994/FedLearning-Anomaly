@@ -3,6 +3,7 @@
 #include "library.h"
 
 void predict(genann const* ann, float* input, float* output);
+void predictAnomaly(FILE* file, genann const* ann, float* input, float* output, float* bestValues); 
 
 void resetMetrics();
 void initMetrics(int outputLayers);
