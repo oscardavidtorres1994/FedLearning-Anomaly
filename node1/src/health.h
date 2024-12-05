@@ -1,13 +1,19 @@
 #include <Arduino.h>
 #include "classification.h"
 #include "mqtt.h"
+#include <string>
+#include <sstream>
+#include <limits> // Para obtener los límites de float
+
+#include <cctype>  // Para verificar caracteres válidos
+
 
 // Configuración de la red neuronal
-const int numberInputLayer = 11;
-const int numberHiddenLayer = 1;
-const int numberOutputLayer = 11;
-const int numberEpochs = 2;
-const int numberIterations = 2;
+const int numberInputLayer = 12;
+const int numberHiddenLayer = 32;
+const int numberOutputLayer = 12;
+const int numberEpochs = 5;
+const int numberIterations = 16;
 float learningRate = 0.1;
 const float anneal = 0.995;
 
@@ -15,6 +21,7 @@ const float anneal = 0.995;
 String pathTrain = "/sdcard/train.csv";
 String pathResult = "/sdcard/result.csv";
 String pathAnomalies = "/sdcard/anomaly.csv";
+String pathExperimentFile = "/sdcard/experimentNumber.txt";
 String pathBest = "/sdcard/best.csv";
 String pathTest = "/sdcard/test.csv";
 String pathSaveWeights = "/sdcard/weights.txt";
@@ -26,6 +33,7 @@ FILE* resultFile;
 FILE* testSetFile;
 FILE* testAnomaly;
 FILE* best;
+FILE* experimentNumberFile;
 
 float input[numberInputLayer];
 float output[numberOutputLayer];
@@ -33,13 +41,14 @@ float bestValues[numberInputLayer];
 genann* ann;
 int epoch = 0;
 int iterations=0;
+int experimentNumber=0;
 bool offlineTraining=false;
 bool trainingDisabled = false;
 bool testingDisabled = false;
 bool useTransferLearning = false;
 bool useFedAvg = true;
 
-const int nodeNumber = 1;
+const int nodeNumber = 3;
 int weightIndex = 0;
 bool waitingWeights = false;
 bool iterationFinished=false;
@@ -71,7 +80,30 @@ bool initFiles() {
     }
     Serial.println("3");
 
-    testAnomaly = fopen(pathAnomalies.c_str(), "a");
+
+    experimentNumberFile = fopen(pathExperimentFile.c_str(), "r");
+    if (!experimentNumberFile) {
+        printf("Could not open experiment number file: %s\n", experimentNumberFile);
+        return false;
+    }else{
+        if (fscanf(experimentNumberFile, "%d", &experimentNumber) != 1) {
+            printf("Error reading experiment number.\n");
+            fclose(experimentNumberFile);
+            return false;
+        }
+        fclose(experimentNumberFile);
+
+    }
+    
+    Serial.println("3.5");
+
+    
+
+    std::ostringstream anomalyFileNameStream;
+    anomalyFileNameStream << "/sdcard/anomaly" << experimentNumber << ".csv";
+    std::string anomalyFileName = anomalyFileNameStream.str();
+
+    testAnomaly = fopen(anomalyFileName.c_str(), "a");
     if (!testAnomaly) {
         Serial.println("Could not create test anomaly file.");
         fclose(trainSetFile);
@@ -139,7 +171,7 @@ void execute(int epoch) {
         while (readData(trainSetFile, input, output)) {
             genann_train(ann, input, output, learningRate);
         }
-        printTrainingTimer(resultFile);
+        printTrainingTimer(epoch+1, resultFile);
 
         learningRate *= anneal;
 
@@ -147,7 +179,7 @@ void execute(int epoch) {
         resetMetrics();
         while (readData(trainSetFile, input, output))
             predict(ann, input, output);
-        printResult(resultFile);
+        // printResult(resultFile);
 
         Serial.printf("Epoch %d completed.\n", epoch + 1);
     }
@@ -157,7 +189,7 @@ void execute(int epoch) {
         while (readData(testSetFile, input, output)) {
             predict(ann, input, output);
         }
-        printResult(resultFile);
+        // printResult(resultFile);
     }
 
     if (!trainingDisabled) {
@@ -166,31 +198,88 @@ void execute(int epoch) {
 }
 
 
+// void callback(const char* topic, byte* payload, unsigned int length) {
+//     waitingWeights = true;
+//     Serial.print("Receving weight: ");
+//     Serial.print(weightIndex+1);
+//     Serial.print("\\");
+//     Serial.print(ann->total_weights);
+//     // Serial.print("\t");
+//     // Serial.print(reinterpret_cast<const char*>(payload));
+
+//     ann->weight[weightIndex] = atof(reinterpret_cast<const char*>(payload));
+//     Serial.print("\t");
+//     Serial.println(ann->weight[weightIndex]);
+//     weightIndex++;
+//     if (weightIndex >= ann->total_weights) {
+//         //closeConnection();
+//         //initMQTT(nodeNumber);
+//         //awaitWeights(callback, nodeNumber, !trainingDisabled);
+//         Serial.println("All weights received");
+//         //closeConnection();
+//         //sleep(1000);
+//         weightIndex = 0;
+        
+//         if(trainingDisabled && !testingDisabled)
+//           execute(0);
+//         waitingWeights = false;
+//     }
+// }
+
+  // Para límites de float
+
+ // Para límites de float
+
 void callback(const char* topic, byte* payload, unsigned int length) {
     waitingWeights = true;
-    Serial.print("Receving weight: ");
-    Serial.print(weightIndex+1);
+
+    Serial.print("Receiving weight: ");
+    Serial.print(weightIndex + 1);
     Serial.print("\\");
     Serial.print(ann->total_weights);
 
-    ann->weight[weightIndex] = atof(reinterpret_cast<const char*>(payload));
-    Serial.print("\t");
-    Serial.println(ann->weight[weightIndex]);
+    // Convertir el payload a un string seguro
+    char buffer[length + 1];
+    strncpy(buffer, reinterpret_cast<const char*>(payload), length);
+    buffer[length] = '\0';  // Asegurarse de que el string esté terminado
+
+    Serial.print("\tPayload: ");
+    Serial.println(buffer);
+
+    // Intentar convertir el payload a float
+    float weight = atof(buffer);
+
+    // Verificar si el peso está dentro del rango del tipo float
+    // if (!isfinite(weight)) {
+    //     Serial.println("\t[Warning] Payload resulted in overflow or invalid value!");
+    //     weight = (weight > 0) ? std::numeric_limits<float>::max() : std::numeric_limits<float>::lowest();
+    //     Serial.print("\tAssigned closest boundary: ");
+    //     Serial.println(weight);
+    // } else if (fabs(weight) > 1e7) {  // Opcional: Límite personalizado para valores muy grandes
+    //     Serial.println("\t[Warning] Payload exceeds practical limits, capping value.");
+    //     weight = (weight > 0) ? 1e7 : -1e7;
+    // }
+
+    // Asignar el peso al array de pesos
+    ann->weight[weightIndex] = weight;
+    Serial.print("\tWeight: ");
+    printf("%f\n", ann->weight[weightIndex]);
+    // Serial.println(ann->weight[weightIndex]);
+
     weightIndex++;
     if (weightIndex >= ann->total_weights) {
-        //closeConnection();
-        //initMQTT(nodeNumber);
-        //awaitWeights(callback, nodeNumber, !trainingDisabled);
         Serial.println("All weights received");
-        //closeConnection();
-        //sleep(1000);
         weightIndex = 0;
-        
-        if(trainingDisabled && !testingDisabled)
-          execute(0);
+
+        if (trainingDisabled && !testingDisabled) {
+            execute(0);
+        }
         waitingWeights = false;
     }
 }
+
+
+
 
 // Modo de entrenamiento inicial
 void trainingMode() {
@@ -269,7 +358,7 @@ void trainingMode() {
 void _loop() {
     if (!offlineTraining){
         if( !trainingDisabled && !waitingWeights && iterations < numberIterations){
-            closeConnection(); //disable MQTT before training to save memory
+            // closeConnection(); //disable MQTT before training to save memory
             for(int i=0; i<numberEpochs; i++ ){
                 execute(epoch);
                 epoch++;
@@ -286,6 +375,7 @@ void _loop() {
                     trainingDisabled = true;
                     //resultFile.close();
                     fclose(trainSetFile);
+                    // fclose(resultFile);
                     iterationFinished=true;
 
 
@@ -307,6 +397,25 @@ void _loop() {
 
             Serial.println("Estimating Anomalies finished");
             processFinished=true;
+            
+            experimentNumberFile = fopen(pathExperimentFile.c_str(), "w");
+            if (!experimentNumberFile) {
+                printf("Could not open experiment number file: %s\n", pathExperimentFile.c_str());
+            } else {
+                Serial.print("Experiment Number finished: ");
+                Serial.println(experimentNumber);
+
+                experimentNumber++; // Incrementar el número del experimento
+
+                // Guardar el número como un entero
+                fprintf(experimentNumberFile, "%d\n", experimentNumber);
+
+                Serial.println("Saving new experimentNumber");
+                fclose(experimentNumberFile);
+                fclose(resultFile);
+            }
+
+
         }
         mqttLoop();
     }else {

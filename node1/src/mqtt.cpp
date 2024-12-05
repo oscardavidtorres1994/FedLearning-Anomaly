@@ -12,6 +12,7 @@ char char_array[30];
 const bool MQTT_DISABLED = false;
 
 // MQTT Broker
+// const char* mqtt_broker = "192.168.154.203";
 const char* mqtt_broker = "192.168.154.203";
 //const int mqtt_port = 1606;
 
@@ -146,7 +147,7 @@ void sendWeights(int node, genann const* ann) {
     sprintf(char_array, "%f", ann->weight[i]);
     //Serial.printf("wei-%d\n",i+2);
     client.publish(path, char_array);
-    delay(200);
+    delay(20);
   }
 
   client.publish(path, "END");

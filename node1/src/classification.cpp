@@ -1,5 +1,5 @@
 #include "classification.h"
-#define columns 11
+#define columns 12
 int totals = 0;
 unsigned short confusionMatrix[5][5];
 int __outputLayers;
@@ -231,27 +231,28 @@ void startTrainingTimer() {
     testTime = millis();
 }
 
-void printSdValue(FILE* file, float value) {
-    fprintf(file, "%.4f,", value);
+void printSdValue(FILE* file, float value, int epoch) {
+    fprintf(file, "epoch: ");
+    fprintf(file, "Epoch: %d, Value: %.4f \n", epoch, value);
 }
 
 void printSdValueScape(FILE* file) {
     fprintf(file, "\n");
 }
 
-void printTrainingTimer(FILE* file) {
-    printSdValue(file, static_cast<float>(millis() - testTime));
+void printTrainingTimer( int epoch, FILE* file) {
+    printSdValue(file, static_cast<float>(millis() - testTime), epoch);
 }
 
 void printResult(FILE* file) {
-    printSdValue(file, static_cast<float>(millis() - testTime));
-    for (int i = 0; i < columns; i++) {
-        printSdValue(file, getMse(i));
-        // printSdValue(file, getPrecision(i));
-        // printSdValue(file, getRecall(i));
-        // printSdValue(file, getF1(i));
-    }
-    printSdValueScape(file);
+    printSdValue(file, static_cast<float>(millis() - testTime), 1);
+    // for (int i = 0; i < columns; i++) {
+    //     printSdValue(file, getMse(i));
+    //     // printSdValue(file, getPrecision(i));
+    //     // printSdValue(file, getRecall(i));
+    //     // printSdValue(file, getF1(i));
+    // }
+    // printSdValueScape(file);
     // printSdValue(file, getMacroAccuracy());
     // printSdValue(file, getMacroPrecision());
     // printSdValue(file, getMacroRecall());

@@ -13,6 +13,6 @@ float getMacroAccuracy();
 
 int getNumberDataset();
 void startTrainingTimer();
-void printTrainingTimer(FILE* file);
+void printTrainingTimer(int epoch, FILE* file);
 
 #endif /* TEST_H */
