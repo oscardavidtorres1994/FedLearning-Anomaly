@@ -32,7 +32,11 @@ client.loop_start()
 try:
     while True:
         # Publicar un mensaje cada segundo
-        mensaje = "¡Hola desde Python cada segundo!"
+        mensaje = "Message 1"
+        client.publish(topic, mensaje)
+        print(f"Mensaje enviado: {mensaje}")
+        time.sleep(10)
+        mensaje = "Message 2"
         client.publish(topic, mensaje)
         print(f"Mensaje enviado: {mensaje}")
         time.sleep(10)

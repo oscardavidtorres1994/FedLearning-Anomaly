@@ -14,6 +14,7 @@ const int numberHiddenLayer = 32;
 const int numberOutputLayer = 12;
 const int numberEpochs = 5;
 const int numberIterations = 16;
+
 float learningRate = 0.1;
 const float anneal = 0.995;
 
@@ -25,6 +26,7 @@ String pathExperimentFile = "/sdcard/experimentNumber.txt";
 String pathBest = "/sdcard/best.csv";
 String pathTest = "/sdcard/test.csv";
 String pathSaveWeights = "/sdcard/weights.txt";
+String pathIterationNumber = "/sdcard/IterationNumber.txt";
 
 
 // Archivos y variables
@@ -34,6 +36,7 @@ FILE* testSetFile;
 FILE* testAnomaly;
 FILE* best;
 FILE* experimentNumberFile;
+FILE* iterationNumberfile;
 
 float input[numberInputLayer];
 float output[numberOutputLayer];
@@ -41,6 +44,7 @@ float bestValues[numberInputLayer];
 genann* ann;
 int epoch = 0;
 int iterations=0;
+int iterationRead=16;
 int experimentNumber=0;
 bool offlineTraining=false;
 bool trainingDisabled = false;
@@ -48,7 +52,7 @@ bool testingDisabled = false;
 bool useTransferLearning = false;
 bool useFedAvg = true;
 
-const int nodeNumber = 3;
+const int nodeNumber = 2;
 int weightIndex = 0;
 bool waitingWeights = false;
 bool iterationFinished=false;
@@ -97,6 +101,26 @@ bool initFiles() {
     
     Serial.println("3.5");
 
+
+    iterationNumberfile = fopen(pathIterationNumber.c_str(), "r");
+    if (!iterationNumberfile) {
+        printf("Could not open experiment number file: %s\n", iterationNumberfile);
+        return false;
+    }else{
+        if (fscanf(iterationNumberfile, "%d", &iterationRead) != 1) {
+            printf("Error reading experiment number.\n");
+            fclose(iterationNumberfile);
+            return false;
+        }
+        fclose(iterationNumberfile);
+
+    }
+    
+    iterations = numberIterations - iterationRead;
+    if(iterations>0){
+        useTransferLearning=true;
+    }
+    Serial.println("3.8");
     
 
     std::ostringstream anomalyFileNameStream;
@@ -270,8 +294,31 @@ void callback(const char* topic, byte* payload, unsigned int length) {
     if (weightIndex >= ann->total_weights) {
         Serial.println("All weights received");
         weightIndex = 0;
+        Serial.println("saving weights..");
+        saveWeightsJson(ann, pathSaveWeights, getNumberDataset());
+        Serial.println("setting new iteration number");
+
+
+        iterationNumberfile = fopen(pathIterationNumber.c_str(), "w");
+        if (iterationNumberfile == NULL) {
+        printf("Error: Could not open file %s for reading.\n", pathIterationNumber);
+        
+        }else{
+            int newIterations = numberIterations - iterations;
+            Serial.println("Iterations number");
+            Serial.println(numberIterations);
+            Serial.println(newIterations);
+            if(newIterations==0){
+                newIterations=16;
+            }
+            fprintf(iterationNumberfile, "%d\n", newIterations); // Guardar el nuevo valor en el archivo
+            fclose(iterationNumberfile);
+        }
+        
+
 
         if (trainingDisabled && !testingDisabled) {
+            
             execute(0);
         }
         waitingWeights = false;
@@ -318,7 +365,7 @@ void trainingMode() {
     srand(time(0));
     if (useTransferLearning){
         Serial.println("Loading transfer learning model...");
-        loadWeightsJson(ann, "/sdcard/weights_load.txt");
+        loadWeightsJson(ann, "/sdcard/weights.txt");
         Serial.println("Transfer learning model loaded");
     }
     else genann_randomize(ann);
@@ -326,8 +373,8 @@ void trainingMode() {
 
     if(!offlineTraining){
         Serial.println("Traning online");
-        Serial.println("Waiting other nodes for 30 seconds ");
-        delay(1*30*1000);
+        Serial.println("Waiting other nodes for 10 seconds ");
+        delay(1*10*1000);
     }
     
     Serial.println("starting training:");
@@ -358,7 +405,7 @@ void trainingMode() {
 void _loop() {
     if (!offlineTraining){
         if( !trainingDisabled && !waitingWeights && iterations < numberIterations){
-            // closeConnection(); //disable MQTT before training to save memory
+            closeConnection(); //disable MQTT before training to save memory
             for(int i=0; i<numberEpochs; i++ ){
                 execute(epoch);
                 epoch++;

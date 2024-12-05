@@ -50,9 +50,11 @@ import threading
 
 
 
-BROKER_HOST = "192.168.154.203"
+BROKER_HOST = "localhost"
 port = 1883
 topic = "weights/iiottest"
+
+last_sent_index = 0
 #BROKER_PORT = 1606
 #BROKER_USERNAME = 'smart_lock'
 #BROKER_PASSWORD = "123456789"
@@ -95,12 +97,56 @@ def on_connect(client, userdata, flags, rc):
 def sendWeights(client):
     if len(weightsFinal) > 0:
         for i in range(0,len(weightsFinal)):
+            # print(len(weightsFinal))
             print(f"SENT WEIGHT: {i}/{len(weightsFinal)}")
             client.publish('/receive-weights', weightsFinal[i])
-            time.sleep(0.1)
+            time.sleep(0.01)
             client.loop()
         print("Weights sent")
     else: print("Can't send the final model. Not all the nodes ended the training process")
+
+  # Variable global para guardar el índice del último peso enviado
+
+ # Variable global para guardar el índice del último peso enviado
+
+# def sendWeights(client):
+#     global last_sent_index
+#     if len(weightsFinal) > 0:
+#         for i in range(last_sent_index, len(weightsFinal)):
+#             try:
+#                 # Verificar conexión antes de enviar
+#                 if not client.is_connected():
+#                     print("Cliente desconectado, intentando reconectar...")
+#                     client.reconnect()
+
+#                 # Publicar el peso
+#                 print(f"Enviando peso {i + 1}/{len(weightsFinal)}...")
+#                 client.publish('/receive-weights', weightsFinal[i], qos=1)
+                
+#                 # Tiempo de espera para evitar saturación del broker
+#                 time.sleep(0.1)
+
+#                 # Actualizar índice del último peso enviado
+#                 last_sent_index = i + 1
+            
+#             except Exception as e:
+#                 # Manejo de excepciones en caso de error
+#                 print(f"Error al enviar peso {i}: {e}")
+#                 print("Reintentando en 1 segundo...")
+#                 time.sleep(1)
+#                 client.reconnect()  # Intentar reconectar al broker
+
+#         # Si todos los pesos fueron enviados exitosamente
+#         print("Todos los pesos han sido enviados.")
+#         last_sent_index = 0  # Reiniciar índice para futuros envíos
+
+#     else:
+#         print("No se puede enviar el modelo final. No todos los nodos completaron el proceso de entrenamiento.")
+
+# Activar loop en un hilo separado
+
+
+
 
 def parseData(lines = []):
     return np.asarray([float(x.strip()) for x in lines])
@@ -170,8 +216,10 @@ client.on_connect = on_connect
 client.on_message = on_message
 #client.username_pw_set(BROKER_USERNAME, BROKER_PASSWORD)
 client.connect(BROKER_HOST, port ,60)#, BROKER_PORT, 60)
+client.reconnect_delay_set(min_delay=1, max_delay=120)
 # Blocking call that processes network traffic, dispatches callbacks and
 # handles reconnecting.
 # Other loop*() functions are available that give a threaded interface and a
 # manual interface.
 client.loop_forever()
+# client.loop_start()
