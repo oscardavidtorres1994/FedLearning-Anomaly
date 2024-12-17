@@ -7,7 +7,8 @@ import threading
 
 
 
-BROKER_HOST = "localhost"
+
+BROKER_HOST = "192.168.1.101"
 port = 1883
 topic = "weights/iiottest"
 
@@ -63,6 +64,40 @@ def sendWeights(client):
         print("All weights sent successfully.")
     else:
         print("Can't send the final model. Not all the nodes ended the training process")
+
+# def sendWeights(client):
+#     if len(weightsFinal) > 0:
+#         block_size = 1000  # Tamaño máximo del bloque
+#         total_weights = len(weightsFinal)
+#         pending_indices = list(range(total_weights))  # Índices de pesos pendientes
+
+#         while pending_indices:  # Reintenta mientras haya pesos pendientes
+#             for i in range(0, len(pending_indices), block_size):  # Dividir en bloques
+#                 block = pending_indices[i:i + block_size]  # Obtener bloque actual
+#                 print(f"Sending block {i // block_size + 1}/{-(-total_weights // block_size)}")
+                
+#                 for index in block[:]:  # Iterar sobre los índices del bloque
+#                     try:
+#                         print(f"Trying to send weight: {index}/{total_weights}")
+#                         result = client.publish('/receive-weights', weightsFinal[index], qos=1)
+
+#                         if result.rc == mqtt.MQTT_ERR_SUCCESS:
+#                             print(f"Successfully sent weight: {index}")
+#                             pending_indices.remove(index)  # Remueve el índice si se envió correctamente
+#                         else:
+#                             print(f"Failed to send weight {index}, requeuing...")
+#                     except Exception as e:
+#                         print(f"Error sending weight {index}: {e}")
+                    
+#                     time.sleep(0.01)  # Retraso entre envíos individuales dentro del bloque
+                
+#                 if pending_indices:  # Esperar antes del próximo bloque si aún hay pendientes
+#                     print("Waiting 30 seconds before sending the next block...")
+#                     time.sleep(30)
+
+#         print("All weights sent successfully.")
+#     else:
+#         print("Can't send the final model. Not all the nodes ended the training process")
 
 
 def parseData(lines):
@@ -152,7 +187,8 @@ def on_message(client, userdata, msg):
             np.savetxt('data.txt', weightsFinal, fmt='%.7f')
 
             print("SENDING WEIGHTS:")
-            sendWeights(client)
+            # sendWeights(client)
+            threading.Thread(target=sendWeights, args=(client,), daemon=True).start()
 
             # Reiniciar el estado de los nodos para el próximo ciclo
             for node in weights.values():

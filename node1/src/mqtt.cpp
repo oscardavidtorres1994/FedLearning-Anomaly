@@ -5,7 +5,7 @@
 //#define MQTT_PASSWORD "123456789"
 
 // WiFi
-const char* ssid = "DavidPhone";     // Enter your WiFi name
+const char* ssid = "DavidPhone2";     // Enter your WiFi name
 const char* password = "D@vid3284";  // Enter WiFi password
 char path[10];
 char char_array[30];
@@ -13,7 +13,7 @@ const bool MQTT_DISABLED = false;
 
 // MQTT Broker
 // const char* mqtt_broker = "192.168.154.203";
-const char* mqtt_broker = "192.168.154.203";
+const char* mqtt_broker = "192.168.1.101";
 //const int mqtt_port = 1606;
 
 
