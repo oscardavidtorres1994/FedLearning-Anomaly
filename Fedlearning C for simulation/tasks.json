@@ -1,0 +1,14 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Compilar y Ejecutar",
+            "type": "shell",
+            "command": "gcc -o federated main.c node.c server.c genann.c -lm && ./federated",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            }
+        }
+    ]
+}

@@ -1,0 +1,22 @@
+{
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "Compilar programa C",
+            "type": "shell",
+            "command": "gcc",
+            "args": [
+                "federated_learning.c",
+                "server.c",
+                "-o",
+                "programa"
+            ],
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "problemMatcher": ["$gcc"],
+            "detail": "Compila el proyecto principal con GCC"
+        }
+    ]
+}

@@ -217,28 +217,7 @@ bool initFiles() {
     }
 
     Serial.println("3");
-
-    // testSetFile = fopen(pathTest.c_str(), "r");
-    // if (!testSetFile) {
-    //     Serial.println("Could not create test file.");
-    //     fclose(trainSetFile);
-    //     fclose(resultFile);
-    //     return false;
-    // }
-    // Serial.println("3");
-
-    // valSetFile = fopen(pathVal.c_str(), "r");
-    // if (!valSetFile) {
-    //     Serial.println("Could not create test file.");
-    //     fclose(trainSetFile);
-    //     fclose(resultFile);
-    //     // fclose(testSetFile);
-    //     return false;
-    // }
-    // Serial.println("3.1");
-
-
-    
+   
 
     return true;
 }
