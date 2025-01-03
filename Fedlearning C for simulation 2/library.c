@@ -76,6 +76,69 @@ bool readData(FILE* in, float* input, float* output) {
     return true;
 }
 
+bool calculateMetrics(const char* metricsFilePath, const char* labelsFilePath, const char* resultsFilePath) {
+    // Abrir el archivo de métricas
+    FILE* metricsFile = fopen(metricsFilePath, "r");
+    if (!metricsFile) {
+        printf("Error: Could not open metrics file %s.\n", metricsFilePath);
+        return false;
+    }
+
+    // Abrir el archivo de etiquetas
+    FILE* labelsFile = fopen(labelsFilePath, "r");
+    if (!labelsFile) {
+        printf("Error: Could not open labels file %s.\n", labelsFilePath);
+        fclose(metricsFile);
+        return false;
+    }
+
+    char metricsLine[128];
+    char labelsLine[128];
+    int truePositive = 0, falsePositive = 0, trueNegative = 0, falseNegative = 0;
+
+    // Leer línea por línea y calcular conteos
+    while (fgets(metricsLine, sizeof(metricsLine), metricsFile) && 
+           fgets(labelsLine, sizeof(labelsLine), labelsFile)) {
+        bool predicted = (strstr(metricsLine, "true") != NULL);
+        bool actual = (strstr(labelsLine, "true") != NULL);
+
+        if (predicted && actual) truePositive++;
+        else if (predicted && !actual) falsePositive++;
+        else if (!predicted && actual) falseNegative++;
+        else trueNegative++;
+    }
+
+    // Calcular métricas
+    float precision = (truePositive + falsePositive > 0) ? (float)truePositive / (truePositive + falsePositive) : 0.0;
+    float recall = (truePositive + falseNegative > 0) ? (float)truePositive / (truePositive + falseNegative) : 0.0;
+    float f1Score = (precision + recall > 0) ? 2 * (precision * recall) / (precision + recall) : 0.0;
+    float accuracy = (truePositive + trueNegative > 0) ? 
+                     (float)(truePositive + trueNegative) / (truePositive + falsePositive + trueNegative + falseNegative) : 0.0;
+    float tpr = recall; // TPR = Recall
+    float tnr = (trueNegative + falsePositive > 0) ? (float)trueNegative / (trueNegative + falsePositive) : 0.0;
+
+    // Guardar métricas en un archivo de resultados
+    FILE* resultsFile = fopen(resultsFilePath, "w");
+    if (resultsFile) {
+        fprintf(resultsFile, "F1-Score,Accuracy,Precision,TPR,TNR\n");
+        fprintf(resultsFile, "%f,%f,%f,%f,%f\n", f1Score, accuracy, precision, tpr, tnr);
+        fclose(resultsFile);
+
+    } else {
+        printf("Error: Could not create results file %s.\n", resultsFilePath);
+        fclose(metricsFile);
+        fclose(labelsFile);
+        return false;
+    }
+
+    // Cerrar archivos
+    fclose(metricsFile);
+    fclose(labelsFile);
+    fclose(resultsFile);
+
+    return true;
+}
+
 
 void initDataframe(int inputLayers, int outputLayers) {
     _inputLayers = inputLayers;

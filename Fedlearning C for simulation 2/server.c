@@ -6,19 +6,19 @@ void fedAvg(genann** ann_nodes, int num_nodes, const char* pathSaveWeightsGlobal
     int total_weights = ann_nodes[0]->total_weights;  // Número total de pesos por modelo
     float* global_weights = (float*)calloc(total_weights, sizeof(float));
 
-    // Sumar los pesos de todos los nodos
+    // Sum all weights
     for (int i = 0; i < num_nodes; i++) {
         for (int j = 0; j < total_weights; j++) {
             global_weights[j] += ann_nodes[i]->weight[j];
         }
     }
 
-    // Promediar los pesos
+    // average the weights 
     for (int j = 0; j < total_weights; j++) {
         global_weights[j] /= num_nodes;
     }
 
-    // Actualizar cada modelo con los pesos globales
+    // Update local models
     for (int i = 0; i < num_nodes; i++) {
         for (int j = 0; j < total_weights; j++) {
             ann_nodes[i]->weight[j] = global_weights[j];

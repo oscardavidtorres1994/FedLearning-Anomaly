@@ -36,25 +36,58 @@ void predict(genann const* ann, float* input, float* output) {
     }
 }
 
-void predictAnomaly(FILE* file, genann const* ann, float* input, float* output, float* bestValues) {
+// void predictAnomaly(FILE* file, genann const* ann, float* input, float* output, float* bestValues) {
+//     const float* run = genann_run(ann, input);
+//     int allValid = 1; // Variable para verificar si todos los valores son válidos
+//     float mseTest[columns]; // Arreglo para errores
+
+//     for (int i = 0; i < columns; i++) {
+//         float error = powf(output[i] - run[i], 2); // Calcula error cuadrático
+//         mseTest[i] = error;
+
+//         if (error > bestValues[i]) {
+//             fprintf(file, "%f,false,", error);
+//             allValid = 0; // Si cualquier valor es mayor, no es válido
+//         } else {
+//             fprintf(file, "%f,true,", error);
+//         }
+//     }
+
+//     fprintf(file, "%s\n", allValid ? "true" : "false");
+// }
+
+void predictAnomaly(FILE* file, genann const* ann, float* input, float* output, float* bestValues, bool within5min, FILE* metricsFile) {
     const float* run = genann_run(ann, input);
-    int allValid = 1; // Variable para verificar si todos los valores son válidos
-    float mseTest[columns]; // Arreglo para errores
+    bool allValid = true;
+    float mseTest[columns];
 
     for (int i = 0; i < columns; i++) {
-        float error = powf(output[i] - run[i], 2); // Calcula error cuadrático
+        float error = powf(output[i] - run[i], 2);
         mseTest[i] = error;
 
         if (error > bestValues[i]) {
-            fprintf(file, "%f,false,", error);
-            allValid = 0; // Si cualquier valor es mayor, no es válido
+            // Lógica adicional para las columnas específicas
+            if ((i == 8 || i == 11) && within5min) {
+                fprintf(file, "%f,true,", error);
+            } else {
+                fprintf(file, "%f,false,", error);
+                allValid = false;
+            }
         } else {
             fprintf(file, "%f,true,", error);
         }
     }
 
-    fprintf(file, "%s\n", allValid ? "true" : "false");
+    if (allValid) {
+        fprintf(file, "true\n");
+    } else {
+        fprintf(file, "false\n");
+    }
+
+    // Guardar el estado general
+    fprintf(metricsFile, "%s\n", allValid ? "true" : "false");
 }
+
 
 void resetMetrics() {
     memset(mse, 0, sizeof(mse)); // Reinicia el arreglo mse a 0

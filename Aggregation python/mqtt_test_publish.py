@@ -4,7 +4,7 @@ import time
 # Configuración del broker y tema
 broker = "broker.hivemq.com"  # Broker público de prueba
 port = 1883
-topic = "dei/test"
+topic = "alexandrade_chat_app/user1"
 
 # Callback cuando se conecta al broker
 def on_connect(client, userdata, flags, rc):
@@ -32,12 +32,12 @@ client.loop_start()
 try:
     while True:
         # Publicar un mensaje cada segundo
-        mensaje = "Message 1"
-        client.publish(topic, mensaje)
+        mensaje = "Message: {1}"
+        # client.publish(topic, mensaje)
         print(f"Mensaje enviado: {mensaje}")
         time.sleep(10)
-        mensaje = "Message 2"
-        client.publish(topic, mensaje)
+        mensaje = "Message: {2}"
+        # client.publish(topic, mensaje)
         print(f"Mensaje enviado: {mensaje}")
         time.sleep(10)
 except KeyboardInterrupt:

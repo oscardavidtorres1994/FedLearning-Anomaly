@@ -6,7 +6,7 @@
 // #include "library.h"
 
 void predict(genann const* ann, float* input, float* output);
-void predictAnomaly(FILE* file, genann const* ann, float* input, float* output, float* bestValues); 
+void predictAnomaly(FILE* file, genann const* ann, float* input, float* output, float* bestValues, bool within5min, FILE* metricsFile); 
 
 void resetMetrics();
 void initMetrics(int outputLayers);

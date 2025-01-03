@@ -14,8 +14,8 @@
 
 genann *ann_general;         // Modelo general
 genann *ann_nodes[nodes];    // Modelos para cada nodo
-const int numberEpochs = 1;
-const int numberIterations = 1;
+const int numberEpochs = 5;
+const int numberIterations = 16;
 
 float learningRate = 0.1;
 const float anneal = 0.995;
@@ -31,7 +31,7 @@ int experimentNumber=0;
 bool offlineTraining=false;
 bool trainingDisabled = false;
 bool testingDisabled = false;
-bool useTransferLearning = true;
+bool useTransferLearning = false;
 bool useFedAvg = true;
 
 // Rutas de archivo
@@ -52,6 +52,8 @@ const char *pathAnomalies = "anomaly.csv";
 const char *pathAnomaliesVal = "valanomaly.csv";
 const char *pathwithin5 = "within5min.csv";
 const char *pathmetrics = "metrics.csv";
+const char *pathlabels = "labels.csv";
+const char *resultsFilePath="results";
 
 
 // String pathVal = "val.csv";
@@ -68,6 +70,7 @@ FILE *testAnomaly = NULL;
 FILE *valAnomaly = NULL;
 FILE *wihitn5min=NULL;
 FILE *metrics=NULL;
+FILE *labels=NULL;
 FILE *best = NULL;
 FILE *iterationNumberFile = NULL;
 
@@ -157,7 +160,7 @@ bool initEstimationfiles(){
         fclose(testSetFile);
         return false;
     }
-    printf("3.1 \n");
+    // printf("3.1 \n");
 
 
     testAnomaly = fopen(pathAnomalies, "w");
@@ -167,7 +170,7 @@ bool initEstimationfiles(){
         fclose(valSetFile);
         return false;
     }
-    printf("4 \n");
+    // printf("4 \n");
 
     valAnomaly= fopen(pathAnomaliesVal, "w");
     if (!valAnomaly) {
@@ -176,16 +179,34 @@ bool initEstimationfiles(){
         fclose(valSetFile);
         return false;
     }
-    printf("4 \n");
+    // printf("4 \n");
 
-    wihitn5min= fopen(pathwithin5, "w");
+    wihitn5min= fopen(pathwithin5, "r");
     if (!wihitn5min) {
         printf("Could not create test anomaly file.");
         fclose(testSetFile);
         fclose(valSetFile);
         return false;
     }
-    printf("4 \n");
+    // printf("4 \n");
+
+    metrics= fopen(pathmetrics, "w");
+    if (!metrics) {
+        printf("Could not create test anomaly file.");
+        fclose(testSetFile);
+        fclose(valSetFile);
+        return false;
+    }
+    // printf("4 \n");
+
+    labels= fopen(pathlabels, "r");
+    if (!labels) {
+        printf("Could not create test anomaly file.");
+        fclose(testSetFile);
+        fclose(valSetFile);
+        return false;
+    }
+    // printf("4 \n");
 
     best = fopen(pathBest, "r");
     if (!best) {
@@ -227,10 +248,11 @@ bool initEstimationfiles(){
         }
 
         fclose(best);  // Cerrar el archivo después de procesarlo
+        
     }
 
-
-    printf("5 \n");
+    printf("All files processed correctly \n");
+    // printf("5 \n");
 
     return true;
 
@@ -306,6 +328,34 @@ void loop() {
                         for (int i = 0; i < 3; i++) fclose(trainSetFile[i]);
 
                         initEstimationfiles();
+                        fseek(testSetFile, 0, SEEK_SET);
+                        fseek(wihitn5min, 0, SEEK_SET);
+                        char withinBuffer[1024]; 
+                        // printf("llego \n");
+                        while (readData(testSetFile, input[0], output[0])) {
+                            if (fgets(withinBuffer, sizeof(withinBuffer), wihitn5min) == NULL) {
+                                printf("Error: Synchronization issue, within5min file has fewer lines than testSetFile.\n");
+                                break; // Termina si no hay más líneas en within5min
+                            }
+                            bool within5minbool = (strstr(withinBuffer, "true") != NULL);
+
+                            // Llamar a predictAnomaly con el nuevo parámetro
+                            predictAnomaly(testAnomaly, ann_nodes[0], input[0], output[0], bestValues, within5minbool, metrics);
+                        }
+                         printf("Estimation end \n");
+
+                         fclose(metrics);
+                         fclose(labels);
+
+                        
+
+                        if (calculateMetrics(pathmetrics, pathlabels, resultsFilePath)) {
+                            printf("Metrics calculated and saved successfully.\n");
+                        } else {
+                            printf("Error calculating metrics.\n");
+                        }
+
+
 
 
 
