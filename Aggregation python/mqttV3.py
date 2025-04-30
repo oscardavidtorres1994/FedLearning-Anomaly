@@ -9,12 +9,14 @@ import threading
 
 
 BROKER_HOST = "192.168.1.101"
+# BROKER_HOST = "192.168.47.203"
 port = 1883
 topic = "weights/iiottest"
 
 last_sent_index = 0
 weights = {}
 weightsFinal = []
+# expected_nodes = ["1","2","3"]
 expected_nodes = ["1","2","3"]
 
 if os.path.isfile('data.txt'):

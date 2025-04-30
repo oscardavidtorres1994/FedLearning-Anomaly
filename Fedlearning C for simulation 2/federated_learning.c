@@ -10,6 +10,7 @@
 #define numberInputLayer  12
 #define numberHiddenLayer  64
 #define numberOutputLayer  12
+// #define nodes 3
 #define nodes 3
 
 genann *ann_general;         // Modelo general
@@ -31,13 +32,16 @@ int experimentNumber=0;
 bool offlineTraining=false;
 bool trainingDisabled = false;
 bool testingDisabled = false;
-bool useTransferLearning = false;
+bool useTransferLearning = true;
 bool useFedAvg = true;
 
 // Rutas de archivo
 const char *pathTrain[nodes] = {"trainId002.csv", "trainId003.csv", "trainId006.csv"};
-// const char *pathTrain = "trainId002.csv";
-char *pathSaveWeights[nodes] = {"weights_train_node1.txt", "weights_train_node2.txt", "weights_train_node3.txt"};
+// const char *pathTrain[nodes] = {"trainMachines.csv"};
+// const char *pathTrain[nodes] = {"trainId002.csv", "trainId006.csv"};
+char *pathSaveWeights[nodes] = {"weights_train_node1.txt", "weights_train_node2.txt","weights_train_node3.txt"};
+// char *pathSaveWeights[nodes] = {"weights_train_node1.txt", "weights_train_node2.txt"};
+// char *pathSaveWeights[nodes]= {"weights_train_node1.txt"};
 char *pathSaveWeightsGlobal="weigthsGlobal.txt";
 const char *pathResult = "result.csv";
 const char *pathIterationNumber = "IterationNumber.txt";
@@ -46,8 +50,8 @@ const char *pathIterationNumber = "IterationNumber.txt";
 // String pathAnomalies = "anomaly.csv";
 // String pathExperimentFile = "experimentNumber.txt";
 const char *pathBest = "best.csv";
-const char *pathTest = "test.csv";
-const char *pathVal = "val.csv";
+const char *pathTest = "testMachines.csv";
+const char *pathVal = "valMachines.csv";
 const char *pathAnomalies = "anomaly.csv";
 const char *pathAnomaliesVal = "valanomaly.csv";
 const char *pathwithin5 = "within5min.csv";
@@ -190,7 +194,7 @@ bool initEstimationfiles(){
     }
     // printf("4 \n");
 
-    metrics= fopen(pathmetrics, "w");
+    metrics= fopen(pathmetrics, "a");
     if (!metrics) {
         printf("Could not create test anomaly file.");
         fclose(testSetFile);
@@ -285,9 +289,9 @@ void execute(int epoch) {
         // Entrenamiento del nodo
         printf("Nodo %d: Iniciando entrenamiento para la epoca %d...\n", i + 1, epoch + 1);
         startTrainingTimer();
-        while (readData(trainSetFile[i], input[i], output[i])) {
-            genann_train(ann_nodes[i], input[i], output[i], learningRate);
-        }
+        // while (readData(trainSetFile[i], input[i], output[i])) {
+        //     genann_train(ann_nodes[i], input[i], output[i], learningRate);
+        // }
         printTrainingTimer(epoch + 1, resultFile);
 
         // Reducir el learning rate
@@ -344,7 +348,7 @@ void loop() {
                         }
                          printf("Estimation end \n");
 
-                         fclose(metrics);
+                        //  fclose(metrics);
                          fclose(labels);
 
                         
@@ -353,6 +357,12 @@ void loop() {
                             printf("Metrics calculated and saved successfully.\n");
                         } else {
                             printf("Error calculating metrics.\n");
+                        }
+
+                        fseek(valSetFile, 0, SEEK_SET);
+                        while (readData(valSetFile, input[0], output[0])) {
+                            bool within5minbool=false;
+                            predictAnomaly(valAnomaly, ann_nodes[0], input[0], output[0], bestValues, within5minbool, metrics);
                         }
 
 

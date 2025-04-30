@@ -2,9 +2,10 @@ import paho.mqtt.client as mqtt
 import time
 
 # Configuración del broker y tema
-broker = "broker.hivemq.com"  # Broker público de prueba
+# broker = "broker.hivemq.com"  # Broker público de prueba
+broker="10.6.0.226"
 port = 1883
-topic = "alexandrade_chat_app/user1"
+topic = "david/user1"
 
 # Callback cuando se conecta al broker
 def on_connect(client, userdata, flags, rc):
@@ -33,11 +34,11 @@ try:
     while True:
         # Publicar un mensaje cada segundo
         mensaje = "Message: {1}"
-        # client.publish(topic, mensaje)
+        client.publish(topic, mensaje)
         print(f"Mensaje enviado: {mensaje}")
         time.sleep(10)
         mensaje = "Message: {2}"
-        # client.publish(topic, mensaje)
+        client.publish(topic, mensaje)
         print(f"Mensaje enviado: {mensaje}")
         time.sleep(10)
 except KeyboardInterrupt:
