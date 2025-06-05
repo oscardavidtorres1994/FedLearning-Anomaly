@@ -19,6 +19,7 @@
 // Declaración de funciones para el entrenamiento y manejo de datos
 void initDataframe(int inputLayers, int outputLayers);
 bool readData(FILE* in, float* input, float* output);
+bool readDataVal(FILE* in, FILE* labels, float* input, float* output);
 void saveWeightsJson(genann const* ann, String path, int items);
 void loadWeightsJson(genann* ann, const String& path);
 void init_sd_card(); 

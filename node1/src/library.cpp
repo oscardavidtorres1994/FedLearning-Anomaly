@@ -107,57 +107,72 @@ bool readData(FILE* in, float* input, float* output) {
 
 
 
-// Randomly shuffles a data object.
-/*void _shuffle(float** input, float** output, int numberRows) {
-  for (int a = 0; a < numberRows; a++) {
-    const int b = rand() % numberRows;
-    float* ot = output[a];
-    float* it = input[a];
-    // Swap output.
-    output[a] = output[b];
-    output[b] = ot;
-    // Swap input.
-    input[a] = input[b];
-    input[b] = it;
-  }
+bool readDataVal(FILE* in, FILE* labels, float* input, float* output) {
+    char line[256];   // Buffer para leer una línea completa del archivo de MSE
+    char line2[256];  // Buffer para leer una línea completa del archivo de etiquetas
+    int i = 0, j = 0;
+
+    // Verificar si hay datos disponibles en ambos archivos
+    if (fgets(line, sizeof(line), in) == nullptr) {
+        return false; // Fin de archivo o error
+    }
+
+    if (fgets(line2, sizeof(line2), labels) == nullptr) {
+        return false; // Fin de archivo o error
+    }
+
+    // Leer valores MSE
+    char* token = strtok(line, ",");
+    while (token != nullptr && i < _inputLayers) {
+        input[i] = atof(token);  // Convertir a float
+        i++;
+        token = strtok(nullptr, ",");
+    }
+
+    // Leer etiquetas y convertir "True"/"False" a 1.0/0.0
+    char* token2 = strtok(line2, ",");
+    while (token2 != nullptr && j < _inputLayers) {
+        // Eliminar saltos de línea o espacios extra
+        while (*token2 == ' ' || *token2 == '\n' || *token2 == '\r') token2++;
+
+        if (strncmp(token2, "True", 4) == 0) {
+            output[j] = 1.0f;
+        } else if (strncmp(token2, "False", 5) == 0) {
+            output[j] = 0.0f;
+        } else {
+            Serial.println("Error: etiqueta no válida en archivo de etiquetas");
+            return false;
+        }
+
+        j++;
+        token2 = strtok(nullptr, ",");
+    }
+
+    if (i != _inputLayers) {
+        Serial.println("Error: número inesperado de columnas en archivo de MSE");
+        return false;
+    }
+
+    if (j != _inputLayers) {
+        Serial.println("Error: número inesperado de columnas en archivo de etiquetas");
+        return false;
+    }
+
+    return true;
 }
-*/
+
+
+
 
 void initDataframe(int inputLayers, int outputLayers) {
-  // int memory = GetFreeSize();
-  // int split = 1;//(memory * .8) / (sizeof(float *) * inputLayers * 1.3);
-
-  // if (split <= 0) split = 1;
-  // if (split > 1000) split = 1000;
-
-  //*input = malloc(split * sizeof(float *));
-  //*output = malloc(split * sizeof(float *));
-
-  // for (int i = 0; i < split; i++) {
-  //(*input) = malloc(inputLayers * sizeof(float));
-  //(*output) = malloc(outputLayers * sizeof(float));
-  // }
 
   _inputLayers = inputLayers;
   _outputLayers = outputLayers;
 
-  // return split;
+
 }
 
-// void saveWeightsJson(genann const* ann, String path, int items) {
-//   File file = SD.open(path, FILE_WRITE);
-//   if (!file) {
-//     Serial.println("Could not open file: weights");
-//     return;
-//   }
 
-//   file.println(items);
-
-//   for (int i = 0; i < ann->total_weights; ++i) {
-//     file.println(ann->weight[i], 20);
-//   }
-//   file.close();
-// }
 void saveWeightsJson(genann const* ann, String path, int items) {
     // Convertir el String a un const char* para fopen
     const char* filePath = path.c_str();
