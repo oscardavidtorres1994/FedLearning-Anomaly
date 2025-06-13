@@ -1,10 +1,13 @@
 #include <Arduino.h>
 #include "anomalyMain.h"
 #include <esp_heap_caps.h>
+#define MARKER_PIN 2
 
 
 void setup() {
     Serial.begin(115200);
+    pinMode(MARKER_PIN, OUTPUT);
+    digitalWrite(MARKER_PIN, LOW);
 
     if (psramFound()) {
       size_t psram_size = esp_spiram_get_size();

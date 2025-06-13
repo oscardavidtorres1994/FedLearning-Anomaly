@@ -97,7 +97,7 @@
 //     free(initial_weights);  // Liberar memoria de los pesos iniciales
 // }
 
-void fedAvg(genann** ann_nodes, int samplesPerNode[], int num_nodes, const char* pathSaveWeightsGlobal, const char* initialWeightsPath, float alpha) {
+void fedAvg(genann** ann_nodes, int samplesPerNode[], int num_nodes, char pathSaveWeightsGlobal[][MAX_PATH_LEN], const char* initialWeightsPath, float alpha) {
     int total_weights = ann_nodes[0]->total_weights;
     float* global_weights = (float*)calloc(total_weights, sizeof(float));
     float* initial_weights = (float*)calloc(total_weights, sizeof(float));
@@ -153,9 +153,13 @@ void fedAvg(genann** ann_nodes, int samplesPerNode[], int num_nodes, const char*
     printf("FedAvg aggregation completed with alpha = %.2f. Weights updated.\n", alpha);
 
     // Guardar el modelo global (opcional)
-    if (pathSaveWeightsGlobal) {
-        printf("Saving global model to %s...\n", pathSaveWeightsGlobal);
-        saveGlobalWeights(ann_nodes[0], pathSaveWeightsGlobal);
+    // if (pathSaveWeightsGlobal) {
+    //     printf("Saving global model to %s...\n", pathSaveWeightsGlobal);
+    //     saveGlobalWeights(ann_nodes[0], pathSaveWeightsGlobal);
+    // }
+    for (int i = 0; i < num_nodes; ++i) {
+    printf("Saving model of node %d to %s...\n", i, pathSaveWeightsGlobal[i]);
+    saveGlobalWeights(ann_nodes[i], pathSaveWeightsGlobal[i]);
     }
 
     free(global_weights);
@@ -170,6 +174,7 @@ void saveGlobalWeights(genann* global_model, const char* path) {
         return;
     }
 
+    fprintf(file, "0\n");
     for (int i = 0; i < global_model->total_weights; i++) {
         fprintf(file, "%f\n", global_model->weight[i]);
     }
@@ -177,3 +182,5 @@ void saveGlobalWeights(genann* global_model, const char* path) {
     fclose(file);
     printf("Global model saved to %s successfully.\n", path);
 }
+
+

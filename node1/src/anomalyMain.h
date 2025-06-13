@@ -9,12 +9,14 @@
 #include "esp_timer.h"
 #include "esp32/clk.h"// Para obtener los límites de float
 
+
 #include <cctype>  // Para verificar caracteres válidos
 // #include "esp_system.h"
 #include <esp_heap_caps.h>
 #define MAX_SAMPLES 11899
 #define MAX_FEATURES 12
 #define MAX_THRESHOLDS 50
+#define MARKER_PIN 2
 
 // Configuración de la red neuronal
 const int numberInputLayer = 12;
@@ -87,226 +89,6 @@ bool waitingWeights = false;
 bool iterationFinished=false;
 bool processFinished=false;
 
-// Inicialización de archivos
-
-// bool initValFiles(){
-//     valSetFile = fopen(pathVal.c_str(), "r");
-//     if (!valSetFile) {
-//         Serial.println("Could not create test file.");
-//         // fclose(trainSetFile);
-//         // fclose(resultFile);
-//         // fclose(testSetFile);
-//         return false;
-//     }
-//     Serial.println("3.1");
-
-//     labelsValFile = fopen(pathlabelsVal.c_str(), "r");
-//     if (!valSetFile) {
-//         Serial.println("Could not create test file.");
-//         // fclose(trainSetFile);
-//         // fclose(resultFile);
-//         fclose(valSetFile);
-//         return false;
-//     }
-//     Serial.println("3.2");
-//     return true;
-// }
-// bool initEstimationfiles(){
-
-//     testSetFile = fopen(pathTest.c_str(), "r");
-//     if (!testSetFile) {
-//         Serial.println("Could not create test file.");
-//         return false;
-//     }
-
-    
-    
-
-//     experimentNumberFile = fopen(pathExperimentFile.c_str(), "r");
-//     if (!experimentNumberFile) {
-//         printf("Could not open experiment number file: %s\n", experimentNumberFile);
-//         return false;
-//     }else{
-//         if (fscanf(experimentNumberFile, "%d", &experimentNumber) != 1) {
-//             printf("Error reading experiment number.\n");
-//             fclose(experimentNumberFile);
-//             return false;
-//         }
-//         fclose(experimentNumberFile);
-
-//     }
-    
-//     Serial.println("3.5");
-
-
-    
-//     Serial.println("3.8");
-    
-
-//     std::ostringstream anomalyFileNameStream;
-//     anomalyFileNameStream << "/sdcard/anomaly" << experimentNumber << ".csv";
-//     std::string anomalyFileName = anomalyFileNameStream.str();
-
-//     testAnomaly = fopen(anomalyFileName.c_str(), "a");
-//     if (!testAnomaly) {
-//         Serial.println("Could not create test anomaly file.");
-//         fclose(testSetFile);
-//         // fclose(valSetFile);
-//         return false;
-//     }
-//     Serial.println("4");
-
-    
-
-//     std::ostringstream anomalyFileNameStream1;
-//     anomalyFileNameStream1 << "/sdcard/valanomaly" << experimentNumber << ".csv";
-//     std::string anomalyFileName1 = anomalyFileNameStream1.str();
-
-//     valAnomaly = fopen(anomalyFileName1.c_str(), "a");
-//     if (!testAnomaly) {
-//         Serial.println("Could not create test anomaly file.");
-//         fclose(testSetFile);
-//         fclose(testAnomaly);
-//         fclose(valSetFile);
-//         return false;
-//     }
-
-//     Serial.println("4.5");
-
-//     best = fopen(pathBest.c_str(), "r");
-//     if (!best) {
-//         printf("Could not open test anomaly best threshold file.\n");
-//         fclose(testSetFile);
-//         fclose(testAnomaly);
-//         fclose(valAnomaly);
-//         // fclose(valSetFile);
-//         return false;
-//     } else {
-//         char buffer[1024];
-//         if (fgets(buffer, sizeof(buffer), best) == NULL) {
-//             printf("Error: Could not read from the file.\n");
-//             fclose(best);
-//             fclose(testSetFile);
-//             fclose(testAnomaly);
-//             fclose(valAnomaly);
-//             // fclose(valSetFile);
-//             return false;
-//         }
-
-//         int count = 0;
-//         char *token = strtok(buffer, ",");
-//         while (token != NULL && count < numberInputLayer) {
-//             bestValues[count] = strtof(token, NULL);  // Convertir el valor a float y almacenarlo
-//             // printf("Value %d: %f\n", count, bestValues[count]); // Imprimir el valor leído
-//             count++;
-//             token = strtok(NULL, ",");
-//         }
-
-//         if (count != numberInputLayer) {
-//             printf("Error: The number of values in the file does not match 'numberInputLayer'.\n");
-//             fclose(best);
-//             fclose(testSetFile);
-//             fclose(testAnomaly);
-//             fclose(valAnomaly);
-//             // fclose(valSetFile);
-//             return false;
-//         }
-
-//         fclose(best);  // Cerrar el archivo después de procesarlo
-//     }
-
-
-//     Serial.println("5");
-
-//     return true;
-
-
-
-
-// }
-
-// bool initestimationGlobalfiles(){
-
-//     testGlobalSetFile = fopen(pathTestGlobal.c_str(), "r");
-//     if (!testGlobalSetFile) {
-//         Serial.println("Could not create test file.");
-//         return false;
-//     }
-
-//     experimentNumberFile = fopen(pathExperimentFile.c_str(), "r");
-//     if (!experimentNumberFile) {
-//         printf("Could not open experiment number file: %s\n", experimentNumberFile);
-//         return false;
-//     }else{
-//         if (fscanf(experimentNumberFile, "%d", &experimentNumber) != 1) {
-//             printf("Error reading experiment number.\n");
-//             fclose(experimentNumberFile);
-//             return false;
-//         }
-//         fclose(experimentNumberFile);
-
-//     }
-
-//     std::ostringstream anomalyFileNameStreamGlobal;
-//     anomalyFileNameStreamGlobal << "/sdcard/anomalyGlobal" << experimentNumber << ".csv";
-//     std::string anomalyFileNameGlobal = anomalyFileNameStreamGlobal.str();
-
-//     testGlobalAnomaly = fopen(anomalyFileNameGlobal.c_str(), "a");
-//     if (!testGlobalAnomaly) {
-//         Serial.println("Could not create test anomaly file.");
-//         fclose(testSetFile);
-//         fclose(valSetFile);
-//         return false;
-//     }
-//     Serial.println("4");
-
-
-//     return true;
-// }
-
-// bool initFiles() {
-//     trainSetFile = fopen(pathTrain.c_str(), "r");
-//     if (!trainSetFile) {
-//         Serial.printf("Could not open file: %s\n", pathTrain.c_str());
-//         return false;
-//     }
-//     Serial.println("1");
-
-//     // resultFile = fopen(pathResult.c_str(), "a");
-//     // if (!resultFile) {
-//     //     Serial.println("Could not create result file.");
-//     //     fclose(trainSetFile);
-//     //     return false;
-//     // }
-//     // Serial.println("2");
-
-//     iterationNumberfile = fopen(pathIterationNumber.c_str(), "r");
-//     if (!iterationNumberfile) {
-//         printf("Could not open experiment number file: %s\n", iterationNumberfile);
-//         return false;
-//     }else{
-//         if (fscanf(iterationNumberfile, "%d", &iterationRead) != 1) {
-//             printf("Error reading experiment number.\n");
-//             fclose(iterationNumberfile);
-//             return false;
-//         }
-//         fclose(iterationNumberfile);
-
-//     }
-
-//     // printf("iteration read: %s\n", iterationRead);
-//     // printf("Number iterations: %s\n", numberIterations);
-//     iterations = 0;
-//     // printf("Number iterations calculed: %s\n", numberIterations);
-//     if(iterations>0){
-//         useTransferLearning=true;
-//     }
-
-//     Serial.println("3");
-   
-
-//     return true;
-// }
 
 bool initValFiles(){
     valSetFile = fopen(pathVal.c_str(), "r");
@@ -482,58 +264,6 @@ bool initFiles(){
 
 // Ejecución de una época de entrenamiento y prueba
 void execute(int epoch) {
-    // if (!trainingDisabled) {
-    //     resultFile = fopen(pathResult.c_str(), "a");
-    //     if (!resultFile) {
-    //         Serial.println("Failed to open result file.");
-    //         return; // Salir si no se puede abrir el archivo
-    //     }
-    //     fseek(trainSetFile, 0, SEEK_SET);
-    //     size_t freeMemBefore = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-    //     size_t minFreeMemBefore = heap_caps_get_minimum_free_size(MALLOC_CAP_8BIT);
-
-    //     startTrainingTimer();
-    //     while (readData(trainSetFile, input, output)) {
-    //         genann_train(ann, input, output, learningRate);
-    //     }
-    //     if(resultFile){
-    //         printTrainingTimer(epoch+1, resultFile);
-    //     }
-        
-    //     size_t freeMemAfter = heap_caps_get_free_size(MALLOC_CAP_8BIT);
-    //     size_t minFreeMemAfter = heap_caps_get_minimum_free_size(MALLOC_CAP_8BIT);
-
-    //     learningRate *= anneal;
-
-    //     fseek(trainSetFile, 0, SEEK_SET);
-    //     resetMetrics();
-    //     while (readData(trainSetFile, input, output))
-    //         predict(ann, input, output);
-    //     // printResult(resultFile);
-    //     if(resultFile){
-    //         // Serial.println("llego");
-    //         fprintf(resultFile, "Epoch %d Memory Report:\n", epoch + 1);
-    //         fprintf(resultFile, "Free Memory Before Training: %d bytes\n", freeMemBefore);
-    //         fprintf(resultFile, "Minimum Free Memory Before Training: %d bytes\n", minFreeMemBefore);
-    //         fprintf(resultFile, "Free Memory After Training: %d bytes\n", freeMemAfter);
-    //         fprintf(resultFile, "Minimum Free Memory After Training: %d bytes\n", minFreeMemAfter);
-
-            
-
-            
-    //     }
-    //     fclose(resultFile);
-        
-    //     Serial.printf("Epoch %d completed.\n", epoch + 1);
-    // }
-   
-    // if (!testingDisabled) {
-    //     resetMetrics();
-    //     while (readData(testSetFile, input, output)) {
-    //         predict(ann, input, output);
-    //     }
-    //     // printResult(resultFile);
-    // }
         if (!trainingDisabled) {
             resultFile = fopen(pathResult.c_str(), "a");
             if (!resultFile) {
@@ -558,9 +288,17 @@ void execute(int epoch) {
             int64_t startCPUTime = esp_timer_get_time();
 
             startTrainingTimer();
+            Serial.println("Starting training");
+            digitalWrite(MARKER_PIN, HIGH);
+            delay(1000); 
+            
+
             while (readData(trainSetFile, input, output)) {
                 genann_train(ann, input, output, learningRate);
             }
+            digitalWrite(MARKER_PIN, LOW);
+            Serial.println("Trainning Over");
+            delay(1000); 
 
             int64_t elapsedCPUTime = esp_timer_get_time() - startCPUTime;  // Time in µs
 
@@ -723,173 +461,6 @@ void trainingMode() {
 }
 
 
-// void _loop() {
-//     if (!offlineTraining){
-//         if( !trainingDisabled && !waitingWeights && iterations < numberIterations){
-//             closeConnection(); //disable MQTT before training to save memory
-//             for(int i=0; i<numberEpochs; i++ ){
-//                 execute(epoch);
-//                 epoch++;
-//             }
-//             Serial.print("Iteration Number: ");
-//             Serial.println(iterations);
-//             iterations++;
-//             epoch=0;
-//             initMQTT(nodeNumber); //enable MQTT
-//             awaitWeights(callback, nodeNumber, !trainingDisabled);
-//             if(iterations >= numberIterations || useFedAvg){
-//                 if(iterations >= numberIterations){
-//                     Serial.println("Training ended.");
-//                     trainingDisabled = true;
-
-//                     fclose(trainSetFile);
-
-//                     iterationFinished=true;
-
-//                 }else Serial.println("Waiting weights...");
-//                 waitingWeights = true;
-//                 sendWeights(nodeNumber, ann);
-//             }
-//         }
-//         if (!testingDisabled && !waitingWeights && iterationFinished  && !processFinished ) {
-//             fclose(trainSetFile);
-//             initEstimationfiles();
-
-//             Serial.println("Estimating Anomalies...");
-//             fseek(testSetFile, 0, SEEK_SET);
-//             while (readData(testSetFile, input, output)){
-//                 predictAnomaly(testAnomaly, ann, input, output, bestValues);
-
-//             }
-//             fclose(testSetFile);
-//             fclose(testAnomaly);
-
-//             initValFiles();
-//             Serial.println("Calculating best Thresholds");
-//             fseek(valSetFile, 0, SEEK_SET);
-//             while (readData(valSetFile, input, output)){
-//                 predictAnomalyVal(valAnomaly, ann, input, output, bestValues);
-
-//             }
-//             fclose(valSetFile);
-//             fclose(valAnomaly);
-
-
-
-//             initestimationGlobalfiles();
-
-//             Serial.println("Estimating Anomalies Global...");
-//             fseek(testGlobalSetFile, 0, SEEK_SET);
-//             while (readData(testGlobalSetFile, input, output)){
-//                 predictAnomaly(testGlobalAnomaly, ann, input, output, bestValues);
-
-//             }
-//             fclose(testGlobalSetFile);
-//             fclose(testGlobalAnomaly);
-
-          
-//             Serial.println("Estimating Anomalies finished");
-
-//             processFinished=true;
-            
-//             experimentNumberFile = fopen(pathExperimentFile.c_str(), "w");
-//             if (!experimentNumberFile) {
-//                 printf("Could not open experiment number file: %s\n", pathExperimentFile.c_str());
-//             } else {
-//                 Serial.print("Experiment Number finished: ");
-//                 Serial.println(experimentNumber);
-
-//                 experimentNumber++; // Incrementar el número del experimento
-
-//                 // Guardar el número como un entero
-//                 fprintf(experimentNumberFile, "%d\n", experimentNumber);
-
-//                 Serial.println("Saving new experimentNumber");
-//                 fclose(experimentNumberFile);
-
-//             }
-
-
-//         }
-//         mqttLoop();
-//     }else {
-//         if( !trainingDisabled && !waitingWeights && epoch < numberEpochs) {
-//             Serial.println("trainning offline");
-//             execute(epoch);
-//             epoch++;
-//             if(epoch >= numberEpochs ){
-//                 Serial.println("Training ended.");
-//                 fclose(trainSetFile);
-//                 // fclose(resultFile);
-//                 initEstimationfiles();
-                
-//                 trainingDisabled = true;
-//                 if (!testingDisabled) {
-//                     Serial.println("Estimating Anomalies...");
-//                     for(int i=0; i<5; i++ ){
-//                         int64_t startCPUTime = esp_timer_get_time();
-
-//                         fseek(testSetFile, 0, SEEK_SET);
-//                         while (readData(testSetFile, input, output)){
-//                             predictAnomaly(testAnomaly, ann, input, output, bestValues);
-
-//                         }
-//                         int64_t elapsedCPUTime = esp_timer_get_time() - startCPUTime;  
-
-//                         Serial.printf("CPU Time Used: %.3f ms\n", elapsedCPUTime / 1000.0);
-
-//                     }
-                    
-
-
-//                     fclose(testSetFile);
-//                     fclose(testAnomaly);
-//                     initValFiles();
-
-//                     Serial.println("Calculating Thresholds...");
-//                     fseek(valSetFile, 0, SEEK_SET);
-//                     while (readData(valSetFile, input, output)){
-//                         predictAnomalyVal(valAnomaly, ann, input, output, bestValues);
-
-//                     }
-//                     fseek(valAnomaly, 0, SEEK_SET);
-//                     fseek(labelsValFile, 0, SEEK_SET);
-
-//                     Serial.println("Calculating Thresholds... 2");
-
-//                     fclose(valSetFile);
-//                     fclose(valAnomaly);
-//                     fclose(labelsValFile);
-
-//                     Serial.println("Estimating Anomalies finished");
-//                 }
-
-//                 fclose(trainSetFile);
-//                 processFinished=true;
-
-//                 experimentNumberFile = fopen(pathExperimentFile.c_str(), "w");
-//                 if (!experimentNumberFile) {
-//                     printf("Could not open experiment number file: %s\n", pathExperimentFile.c_str());
-//                 } else {
-//                     Serial.print("Experiment Number finished: ");
-//                     Serial.println(experimentNumber);
-
-//                     experimentNumber++; // Incrementar el número del experimento
-
-//                     // Guardar el número como un entero
-//                     fprintf(experimentNumberFile, "%d\n", experimentNumber);
-
-//                     Serial.println("Saving new experimentNumber");
-//                     fclose(experimentNumberFile);
-//                     // fclose(resultFile);
-//                 }
-
-//             }
-
-//         }
-//     }
-
-// }
 
 void estimateAndSaveResults() {
     Serial.println("Estimating Anomalies...");

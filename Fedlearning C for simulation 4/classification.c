@@ -4,6 +4,10 @@
 #include <math.h>
 #include <time.h>
 #include <string.h>
+#include <stdint.h>
+
+#ifdef _WIN32
+#include <windows.h>
 
 // Prototipo de la función millis
 unsigned long millis();
@@ -129,7 +133,24 @@ int getNumberDataset() {
 
 // Implementación de millis para C
 unsigned long millis() {
+    static LARGE_INTEGER frequency;
+    static BOOL initialized = FALSE;
+    if (!initialized) {
+        QueryPerformanceFrequency(&frequency);
+        initialized = TRUE;
+    }
+
+    LARGE_INTEGER now;
+    QueryPerformanceCounter(&now);
+    return (unsigned long)((now.QuadPart * 1000) / frequency.QuadPart);
+}
+
+#else
+#include <time.h>
+
+unsigned long millis() {
     struct timespec ts;
     clock_gettime(CLOCK_MONOTONIC, &ts);
     return ts.tv_sec * 1000 + ts.tv_nsec / 1000000;
 }
+#endif
