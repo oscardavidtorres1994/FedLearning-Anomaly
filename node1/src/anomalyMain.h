@@ -23,7 +23,8 @@ const int numberInputLayer = 12;
 const int numberHiddenLayer = 64;
 // const int numberHiddenLayer = 2;
 const int numberOutputLayer = 12;
-const int numberEpochs = 10;
+const int numberEpochs = 1;
+const int MeasureEpochs=10;
 const int numberIterations = 1;
 
 float learningRate = 0.1;
@@ -289,16 +290,17 @@ void execute(int epoch) {
 
             startTrainingTimer();
             Serial.println("Starting training");
-            digitalWrite(MARKER_PIN, HIGH);
-            delay(1000); 
-            digitalWrite(MARKER_PIN, LOW);
             
-            for(int i=0; i<epoch; i++){
-            fseek(trainSetFile, 0, SEEK_SET);
+            
+            for(int i=0; i<MeasureEpochs; i++){
+                digitalWrite(MARKER_PIN, HIGH);
+                delay(1000); 
+                digitalWrite(MARKER_PIN, LOW);
+                fseek(trainSetFile, 0, SEEK_SET);
 
-            while (readData(trainSetFile, input, output)) {
-                genann_train(ann, input, output, learningRate);
-            }
+                while (readData(trainSetFile, input, output)) {
+                    genann_train(ann, input, output, learningRate);
+                }
             }
             // digitalWrite(MARKER_PIN, LOW);
             Serial.println("Trainning Over");
@@ -563,20 +565,30 @@ void _loop() {
                 trainingDisabled = true;
 
                 if (!testingDisabled) {
-                    for (int i = 0; i < 30; i++) {
-                        int64_t startCPUTime = esp_timer_get_time();
+                    int64_t startCPUTime = esp_timer_get_time();
+                    for (int i = 0; i < MeasureEpochs; i++) {
+
+                       
                         fseek(testSetFile, 0, SEEK_SET);
-                        Serial.println("Starting Test");
                         digitalWrite(MARKER_PIN, HIGH);
-                        delay(1000); 
+                        delay(500); 
+                        digitalWrite(MARKER_PIN, LOW);
+                        delay(500); 
+                        digitalWrite(MARKER_PIN, HIGH);
+                        delay(500); 
+                        digitalWrite(MARKER_PIN, LOW);
+
+
                         while (readData(testSetFile, input, output)) {
                             predictAnomaly(testAnomaly, ann, input, output, bestValues);
                         }
-                        Serial.println("Test Over");
-                        digitalWrite(MARKER_PIN, HIGH);
-                        int64_t elapsedCPUTime = esp_timer_get_time() - startCPUTime;
-                        Serial.printf("CPU Time Used: %.3f ms\n", elapsedCPUTime / 1000.0);
+                        
                     }
+
+                    Serial.println("Test Over");
+                    // digitalWrite(MARKER_PIN, HIGH);
+                    int64_t elapsedCPUTime = esp_timer_get_time() - startCPUTime;
+                    Serial.printf("CPU Time Used: %.3f ms\n", elapsedCPUTime / 1000.0);
 
                     fclose(testSetFile);
                     fclose(testAnomaly);
