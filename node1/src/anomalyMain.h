@@ -23,7 +23,7 @@ const int numberInputLayer = 12;
 const int numberHiddenLayer = 64;
 // const int numberHiddenLayer = 2;
 const int numberOutputLayer = 12;
-const int numberEpochs = 30;
+const int numberEpochs = 10;
 const int numberIterations = 1;
 
 float learningRate = 0.1;
@@ -271,7 +271,7 @@ void execute(int epoch) {
                 return;
             }
 
-            fseek(trainSetFile, 0, SEEK_SET);
+            
             Serial.printf("Total PSRAM: %d bytes\n", heap_caps_get_total_size(MALLOC_CAP_SPIRAM));
 
             // ✅ Measure memory before training
@@ -291,14 +291,18 @@ void execute(int epoch) {
             Serial.println("Starting training");
             digitalWrite(MARKER_PIN, HIGH);
             delay(1000); 
+            digitalWrite(MARKER_PIN, LOW);
             
+            for(int i=0; i<epoch; i++){
+            fseek(trainSetFile, 0, SEEK_SET);
 
             while (readData(trainSetFile, input, output)) {
                 genann_train(ann, input, output, learningRate);
             }
-            digitalWrite(MARKER_PIN, LOW);
+            }
+            // digitalWrite(MARKER_PIN, LOW);
             Serial.println("Trainning Over");
-            delay(1000); 
+            // delay(1000); 
 
             int64_t elapsedCPUTime = esp_timer_get_time() - startCPUTime;  // Time in µs
 
@@ -562,9 +566,14 @@ void _loop() {
                     for (int i = 0; i < 30; i++) {
                         int64_t startCPUTime = esp_timer_get_time();
                         fseek(testSetFile, 0, SEEK_SET);
+                        Serial.println("Starting Test");
+                        digitalWrite(MARKER_PIN, HIGH);
+                        delay(1000); 
                         while (readData(testSetFile, input, output)) {
                             predictAnomaly(testAnomaly, ann, input, output, bestValues);
                         }
+                        Serial.println("Test Over");
+                        digitalWrite(MARKER_PIN, HIGH);
                         int64_t elapsedCPUTime = esp_timer_get_time() - startCPUTime;
                         Serial.printf("CPU Time Used: %.3f ms\n", elapsedCPUTime / 1000.0);
                     }
