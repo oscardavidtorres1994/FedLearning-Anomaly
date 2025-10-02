@@ -592,22 +592,22 @@ void _loop() {
 
                     fclose(testSetFile);
                     fclose(testAnomaly);
-                    initValFiles();
-                    Serial.println("Calculating Thresholds...");
+                    // initValFiles();
+                    // Serial.println("Calculating Thresholds...");
 
-                    fseek(valSetFile, 0, SEEK_SET);
-                    while (readData(valSetFile, input, output)) {
-                        predictAnomalyVal(valAnomaly, ann, input, output, bestValues);
-                    }
+                    // fseek(valSetFile, 0, SEEK_SET);
+                    // while (readData(valSetFile, input, output)) {
+                    //     predictAnomalyVal(valAnomaly, ann, input, output, bestValues);
+                    // }
 
-                    fseek(valAnomaly, 0, SEEK_SET);
-                    fseek(labelsValFile, 0, SEEK_SET);
+                    // fseek(valAnomaly, 0, SEEK_SET);
+                    // fseek(labelsValFile, 0, SEEK_SET);
 
-                    fclose(valSetFile);
-                    fclose(valAnomaly);
-                    fclose(labelsValFile);
+                    // fclose(valSetFile);
+                    // fclose(valAnomaly);
+                    // fclose(labelsValFile);
 
-                    Serial.println("Estimating Anomalies finished");
+                    // Serial.println("Estimating Anomalies finished");
                 }
 
                 fclose(trainSetFile);

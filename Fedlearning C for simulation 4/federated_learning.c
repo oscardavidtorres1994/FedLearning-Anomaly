@@ -10,11 +10,12 @@
 #include <ctype.h>
 
 #define nodes 3
-#define BASE_PATH "C:/Users/socia/Documents/FederatedLearningC/Data to put on nodes v2/Data to put on nodes v2/Experiment 1/Corrections 2"
+// #define BASE_PATH "C:/Users/socia/Documents/FederatedLearningC/Data to put on nodes v2/Data to put on nodes v2/Experiment 1/Corrections 2"
 
+#define BASE_PATH "./"
 #define MAX_WEEKS 100
 
-float alpha = 0.7;
+float alpha = 0;
 
 int weeksFound[MAX_WEEKS];
 int numWeeks = 0;
@@ -69,7 +70,7 @@ int nextweek=7;
 bool offlineTraining=false;
 bool trainingDisabled = false;
 bool testingDisabled = false;
-bool useTransferLearning = true;
+bool useTransferLearning = false;
 bool useFedAvg = true;
 
 // Rutas de archivo
@@ -690,42 +691,42 @@ void loop() {
 
 // }
 
-int list_weeks_in_base(const char *basePath, int *weeksFound, int maxWeeks) {
-    DIR *dir = opendir(basePath);
-    if (!dir) {
-        printf("[ERROR] No se pudo abrir la carpeta base %s\n", basePath);
-        return 0;
-    }
+// int list_weeks_in_base(const char *basePath, int *weeksFound, int maxWeeks) {
+//     DIR *dir = opendir(basePath);
+//     if (!dir) {
+//         printf("[ERROR] No se pudo abrir la carpeta base %s\n", basePath);
+//         return 0;
+//     }
 
-    struct dirent *entry;
-    int count = 0;
+//     struct dirent *entry;
+//     int count = 0;
 
-    while ((entry = readdir(dir)) != NULL) {
-        if (entry->d_type == DT_DIR) {
-            // Buscar carpetas que empiecen con "week_"
-            if (strncmp(entry->d_name, "week_", 5) == 0) {
-                // Extraer el número después de "week_"
-                const char *p = entry->d_name + 5;
-                int valid = 1;
-                for (int i = 0; p[i] != '\0'; i++) {
-                    if (!isdigit(p[i])) {
-                        valid = 0;
-                        break;
-                    }
-                }
-                if (valid) {
-                    int weekNum = atoi(p);
-                    if (count < maxWeeks) {
-                        weeksFound[count++] = weekNum;
-                    }
-                }
-            }
-        }
-    }
+//     while ((entry = readdir(dir)) != NULL) {
+//         if (entry->d_type == DT_DIR) {
+//             // Buscar carpetas que empiecen con "week_"
+//             if (strncmp(entry->d_name, "week_", 5) == 0) {
+//                 // Extraer el número después de "week_"
+//                 const char *p = entry->d_name + 5;
+//                 int valid = 1;
+//                 for (int i = 0; p[i] != '\0'; i++) {
+//                     if (!isdigit(p[i])) {
+//                         valid = 0;
+//                         break;
+//                     }
+//                 }
+//                 if (valid) {
+//                     int weekNum = atoi(p);
+//                     if (count < maxWeeks) {
+//                         weeksFound[count++] = weekNum;
+//                     }
+//                 }
+//             }
+//         }
+//     }
 
-    closedir(dir);
-    return count;
-}
+//     closedir(dir);
+//     return count;
+// }
 
 int main() {
     // int numWeeks = 38;
@@ -735,17 +736,17 @@ int main() {
     //     32, 33, 34, 35, 36, 37, 38, 39, 40, 41,
     //     42, 43,44, 45, 46, 53, 54, 55
     // };
-    int numWeeks = 36;
-    int weeksFound[MAX_WEEKS] = {
-        6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
-        16, 17, 18, 19, 21, 23, 29, 30, 31,
-        32, 33, 34, 35, 36, 37, 38, 39, 40,
-        42, 43, 45, 46, 53, 54, 55, 56
-    };
-    // int numWeeks = 2;
+    // int numWeeks = 36;
     // int weeksFound[MAX_WEEKS] = {
-    //     54,55 
+    //     6, 7, 8, 9, 10, 11, 12, 13, 14, 15,
+    //     16, 17, 18, 19, 21, 23, 29, 30, 31,
+    //     32, 33, 34, 35, 36, 37, 38, 39, 40,
+    //     42, 43, 45, 46, 53, 54, 55, 56
     // };
+    int numWeeks = 2;
+    int weeksFound[MAX_WEEKS] = {
+        8,9 
+    };
 
     printf("Carpetas week encontradas: [");
     for (int i = 0; i < numWeeks; i++) {
